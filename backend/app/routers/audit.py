@@ -23,7 +23,11 @@ def list_entries(
     page: int = 1,
     size: int = 20,
 ) -> PageResult[dict]:
-    """按内审编号与状态过滤内审检查列表；没有数据时返回空页，不报错。"""
+    """按内审编号与状态过滤内审检查列表；没有数据时返回空页，不报错。
+
+    每条记录附带可执行动作/是否重新核查等结论，结论由 service 统一计算，
+    列表页只负责展示，不再自行判断下一步动作。
+    """
     if size > 200:
         raise HTTPException(status_code=400, detail="每页最多 200 条，请缩小分页范围")
     items, total = service.list_entries(keyword=keyword, status=status, page=page, size=size)
@@ -32,7 +36,7 @@ def list_entries(
 
 @router.get("/{entry_id}", response_model=dict)
 def get_entry(entry_id: int) -> dict:
-    """读取单条内审记录明细；不存在时给出可读的错误说明。"""
+    """读取单条内审记录明细，结论口径与列表、动作提交完全一致。"""
     entry = service.get_entry(entry_id)
     if entry is None:
         raise HTTPException(status_code=404, detail=f"内审记录 {entry_id} 不存在或已归档")
