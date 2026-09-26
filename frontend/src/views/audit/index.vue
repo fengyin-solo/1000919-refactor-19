@@ -36,17 +36,32 @@
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="String(row.id)">
-          <td v-for="column in columns" :key="column">{{ row[column] ?? '—' }}</td>
+          <td v-for="column in columns" :key="column">
+            <RouterLink v-if="column === '内审编号'" class="link" :to="`/audit/${row.id}`">
+              {{ row[column] ?? '—' }}
+            </RouterLink>
+            <template v-else>
+              {{ row[column] ?? '—' }}
+              <span
+                v-if="column === '内审状态' && getConclusion(row)"
+                class="conclusion-tag"
+                :class="conclusionTone(getConclusion(row))"
+              >{{ getConclusion(row) }}</span>
+            </template>
+          </td>
           <td class="row-actions">
-            <button
-              v-for="action in actions"
-              :key="action"
-              class="link"
-              type="button"
-              @click="runAction(action, row)"
-            >
-              {{ action }}
-            </button>
+            <template v-if="getActions(row).length">
+              <button
+                v-for="action in getActions(row)"
+                :key="action"
+                class="link"
+                type="button"
+                @click="runAction(action, row)"
+              >
+                {{ action }}
+              </button>
+            </template>
+            <span v-else class="muted-text">—</span>
           </td>
         </tr>
         <tr v-if="!rows.length">
@@ -66,16 +81,13 @@
 import { onMounted, ref } from 'vue'
 
 import { request } from '@/api/client'
-
-type Row = Record<string, string | number | null>
+import { conclusionTone, getActions, getConclusion, type AuditEntry } from './rules'
 
 const ENDPOINT = '/api/audit'
 const columns = ["内审编号", "内审日期", "内审部门", "检查条款", "检查结果", "不符合项", "整改期限", "内审状态"]
-const actions = ["开始审核", "记录结果", "提交整改"]
-const statuses = ["待审核", "审核中", "已通过", "待整改"]
 const stats = [{"label": "待审核记录", "value": 0}, {"label": "审核中记录", "value": 0}, {"label": "已通过记录", "value": 0}]
 
-const rows = ref<Row[]>([])
+const rows = ref<AuditEntry[]>([])
 const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
@@ -94,15 +106,16 @@ function openCreate() {
   errorMessage.value = '内审记录登记入口尚未接入审批流'
 }
 
-async function runAction(action: string, row: Row) {
+async function runAction(action: string, row: AuditEntry) {
   errorMessage.value = ''
   try {
     const response = await request(`${ENDPOINT}/${row.id}/actions`, {
       method: 'POST',
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ values: { action } }),
     })
+    const payload = await response.json().catch(() => null) as { message?: string } | null
     if (!response.ok) {
-      throw new Error('内审检查动作未生效，请稍后重试')
+      throw new Error(payload?.message || '内审检查动作未生效，请稍后重试')
     }
     await reload()
   } catch (error) {
@@ -128,3 +141,19 @@ async function reload() {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.conclusion-tag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+.conclusion-tag.muted { color: var(--muted); }
+.conclusion-tag.info { color: #1f6feb; border-color: #1f6feb; }
+.conclusion-tag.success { color: #067647; border-color: #067647; }
+.conclusion-tag.warning { color: #b54708; border-color: #b54708; }
+.conclusion-tag.danger { color: #b42318; border-color: #b42318; }
+.muted-text { color: var(--muted); }
+</style>

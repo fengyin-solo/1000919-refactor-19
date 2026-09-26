@@ -16,6 +16,7 @@ const Blind = () => import('@/views/blind/index.vue')
 const Ability = () => import('@/views/ability/index.vue')
 const Intermediate = () => import('@/views/intermediate/index.vue')
 const Audit = () => import('@/views/audit/index.vue')
+const AuditDetail = () => import('@/views/audit/detail.vue')
 const Certification = () => import('@/views/certification/index.vue')
 const Quality = () => import('@/views/quality/index.vue')
 const Reagent2 = () => import('@/views/reagent2/index.vue')
@@ -41,6 +42,7 @@ const router = createRouter({
     { path: '/ability', name: 'ability', component: Ability },
     { path: '/intermediate', name: 'intermediate', component: Intermediate },
     { path: '/audit', name: 'audit', component: Audit },
+    { path: '/audit/:id', name: 'audit-detail', component: AuditDetail },
     { path: '/certification', name: 'certification', component: Certification },
     { path: '/quality', name: 'quality', component: Quality },
     { path: '/reagent2', name: 'reagent2', component: Reagent2 },
